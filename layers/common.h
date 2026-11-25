@@ -210,3 +210,5 @@ struct layer {
 	int	bytesent;			/* flow control counter for */
 						/*  network XT protocol */
 };
+
+int selectmask();		/* multiplex.c: select() on an int fd mask */

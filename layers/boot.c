@@ -101,7 +101,7 @@ checkterm(fd)
 		if ((n = poll(&pollfd, 1, 7000)) <= 0)
 #else
 		SET_FD(fd, rd_set);
-		if ((n = select(MAXFD, &rd_set, (int *)0, (int *)0, &t)) <= 0)
+		if ((n = selectmask(&rd_set, &t)) <= 0)
 #endif
 		{
 			if (n == 0) {
@@ -160,7 +160,7 @@ checkterm(fd)
 		if ((n = poll(&pollfd, 1, 7000)) <= 0)
 #else
 		SET_FD(fd, rd_set);
-		if ((n = select(MAXFD, &rd_set, (int *)0, (int *)0, &t)) <= 0)
+		if ((n = selectmask(&rd_set, &t)) <= 0)
 #endif
 		{
 			if (n == 0) {

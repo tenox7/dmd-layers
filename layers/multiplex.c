@@ -15,6 +15,7 @@
 #include "common.h"
 #include <sys/types.h>
 #include <sys/time.h>
+#include <sys/select.h>
 #include <sys/resource.h>
 #include <signal.h>
 #include <errno.h>
@@ -89,6 +90,34 @@ struct pollfd *pollfds;
 }
 #endif
 
+/*
+ * select() on an int bit mask of fds (SET_FD etc.), through a real fd_set.
+ * Passing the int itself is wrong on 64-bit Linux and FreeBSD: their
+ * select() reads and writes a whole long, and zeroed the 4 bytes next to
+ * the int (on FreeBSD the caller's saved register: layers crashed).
+ */
+int
+selectmask(mask, tv)
+int *mask;
+struct timeval *tv;
+{
+	fd_set fs;
+	int fd, n;
+
+	FD_ZERO(&fs);
+	for (fd = 0; fd < MAXFD; fd++)
+		if (ISSET_FD(fd, *mask))
+			FD_SET(fd, &fs);
+	n = select(MAXFD, &fs, (fd_set *)0, (fd_set *)0, tv);
+	if (n >= 0) {
+		ZERO_FD(*mask);
+		for (fd = 0; fd < MAXFD; fd++)
+			if (FD_ISSET(fd, &fs))
+				SET_FD(fd, *mask);
+	}
+	return(n);
+}
+
 multiplex()
 {
 	register int bits, cc, fd, lay, nfd;
@@ -142,14 +171,14 @@ multiplex()
 		rd_set = rd_enabled;
 		Debug(DEBDETAIL,"multiplex calling poll select, rd_set 0x%x\n",
 					rd_set);
-		if ((nfd=select(MAXFD,&rd_set,(int *)0,(int *)0,&pollst)) == 0){
+		if ((nfd=selectmask(&rd_set,&pollst)) == 0){
 			flush_write();
 			Debug(DEBDETAIL,"nothing in poll, calling select\n");
 			rd_set = rd_enabled;
 			/* Linux select() leaves the time not used in st */
 			st.tv_sec = SELSEC;
 			st.tv_usec = SELUSEC;
-			nfd=select(MAXFD,&rd_set,(int *)0,(int *)0,&st);
+			nfd=selectmask(&rd_set,&st);
 		}
 #endif
 		if (nfd <= 0) {
@@ -348,7 +377,7 @@ int req_set;
 	st.tv_sec = 0;
 	st.tv_usec = 0;
 
-	if ((nfd = select(MAXFD, &req_set, (int *)0, (int *)0, &st)) < 0)
+	if ((nfd = selectmask(&req_set, &st)) < 0)
 #else
 	npollfds = settopoll(req_set, pollfds);
 	if ((nfd = poll(pollfds, npollfds, 0)) < 0)
@@ -439,7 +468,7 @@ int seconds;
 #else
 	st.tv_sec = seconds;
 	st.tv_usec = 0;
-    	ret = select(MAXFD, &req_set, (int *)0, (int *)0, &st);
+    	ret = selectmask(&req_set, &st);
 #endif
 
 	saverr = errno;
