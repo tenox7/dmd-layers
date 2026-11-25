@@ -1,0 +1,15 @@
+*.o
+*.a
+layers/layers
+misc/grantpt
+misc/ismpx
+misc/jterm
+misc/jwin
+misc/movelogin
+misc/needsysprog
+misc/penter
+misc/pfkey
+misc/plabel
+misc/pmenu
+misc/xtagent
+inst/

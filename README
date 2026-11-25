@@ -1,3 +1,15 @@
+2026 CHANGES IN THIS COPY (github.com/tenox7/dmd-layers)
+	Builds and runs on macOS, FreeBSD and current Linux
+(glibc 2.30 and later has no stropts.h).  Tested with the DMD 5620
+emulator dmd5620 (github.com/tenox7/dmd5620), firmware 8;7;5.
+	macOS: make EXTRACFLAGS="-O -w -std=gnu89 -D_FORTIFY_SOURCE=0
+-Wno-return-mismatch" (see the top Makefile).
+	Fixes: on Linux, select() changed its timeout, so the packet timer
+ran in a tight loop and the protocol broke down; two use-after-free bugs
+in agent.c (crash when the last window is deleted); a zombie movelogin;
+prototypes for variadic calls (arm64 passes them on the stack).
+
+
 			PSUEDO TTY LAYERS PACKAGE
 
 INTRODUCTION

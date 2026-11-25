@@ -11,6 +11,7 @@
  *	Enhancements by David Dykstra at AT&T.
  *	This source code may be freely distributed.
  */
+#include <string.h>
 #include "common.h"
 #include <sys/types.h>
 #include <sys/time.h>
@@ -103,7 +104,6 @@ multiplex()
 	extern int exiting;
 	extern int dmdtype;
 	extern int errno;
-	extern char *sys_errlist[];
 	extern int active;
 	extern int deadlayer[];
 	extern int agentblock;
@@ -146,13 +146,16 @@ multiplex()
 			flush_write();
 			Debug(DEBDETAIL,"nothing in poll, calling select\n");
 			rd_set = rd_enabled;
+			/* Linux select() leaves the time not used in st */
+			st.tv_sec = SELSEC;
+			st.tv_usec = SELUSEC;
 			nfd=select(MAXFD,&rd_set,(int *)0,(int *)0,&st);
 		}
 #endif
 		if (nfd <= 0) {
 			int sve = errno;
 			Debug(DEBDETAIL,"multiplex select <= 0: %d %s\n", nfd, 
-					(nfd < 0) ? sys_errlist[sve] : "");
+					(nfd < 0) ? strerror(sve) : "");
 			errno = sve;
 			if (nfd == 0) {
 				Debug(DEBDETAIL,"multiplex select 0, exiting: %d, Ptflag: %d\n", exiting, Ptflag);

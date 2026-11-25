@@ -10,6 +10,7 @@
  *	Enhancements by David Dykstra at AT&T.
  *	This source code may be freely distributed.
  */
+#include <string.h>
 #include "common.h"
 #include <sys/types.h>
 #ifdef USE_DIRENT
@@ -31,7 +32,6 @@
 
 #include "sys/jioctl.h"
 
-extern char* sys_errlist[];
 
 static struct aglist *aghead = AGNIL;
 static struct aglist *agtail = AGNIL;
@@ -126,7 +126,7 @@ char *tty;
 #ifndef USE_PTY_FOR_AGENT
 	if ((agentsock = open (asockname, O_RDWR, 0)) < 0) {
 		fprintf (stderr, "layers: open (%s) failed: %s\r\n",
-			 asockname, sys_errlist[errno]);
+			 asockname, strerror(errno));
 		perror("");
 		return(-1);
 	}
@@ -247,14 +247,14 @@ int fd;
 	if ((recvlen = recvfrom(fd, &req, sizeof(req), 0,
 			(struct sockaddr *) 0, &fromlen)) < 0) {
 		Debug(DEBERROR, "recvhostagent: recvfrom(%d) failed: %s\n", fd,
-							sys_errlist[errno]);
+							strerror(errno));
 		startagent();
 		return;
 	}
 #else
 	if ((recvlen = read (fd, &req, sizeof(req))) < 0) {
 		Debug(DEBERROR, "recvhostagent: read(%d) failed: %s\n", fd,
-							sys_errlist[errno]);
+							strerror(errno));
 		startagent();
 		return;
 	}
@@ -427,7 +427,7 @@ register struct aglist *ap;
 	if (ap->xtfd == -1) {
 		if ((ap->xtfd = open (path, O_WRONLY, 0)) < 0) {
 			Debug(DEBERROR, "sendhostagent: open (%s) failed: %s\n",
-				 path, sys_errlist[errno]);
+				 path, strerror(errno));
 		}
 	}
 	if (ap->xtfd >= 0) {
@@ -435,7 +435,7 @@ register struct aglist *ap;
 		if (check_write (ap->xtfd, &ans, sizeof(ans)) == sizeof(ans))
 			return;
 		Debug(DEBERROR, "sendhostagent: can't write to %s: %s\n",
-			 path, sys_errlist[errno]);
+			 path, strerror(errno));
 	}
 #else
 	if (sendto(agentsock, &ans, sizeof(ans), 0, &outsock, len) >= 0)
@@ -506,6 +506,7 @@ register struct aglist *targ;
 startagent()
 {
 	register struct aglist *ap;
+	struct aglist *next;
 	register struct layer *lp;
 	char ctlbuf[9];
 	char path[MAXPATHLEN];
@@ -541,7 +542,8 @@ startagent()
 		return;
 	}
 	/* check for dead requesting processes */
-	for (ap = aghead; ap != AGNIL; ap = ap->next){
+	for (ap = aghead; ap != AGNIL; ap = next) {
+		next = ap->next;	/* delagent() frees ap */
 		if ((ap->pid == 0) || (ap->state == AG_DEAD))
 			continue;
 		if (kill(ap->pid, 0) >= 0)
@@ -1061,6 +1063,7 @@ char *agntpt;
 			else {
 				delagent(ap);
 				startexit();
+				break;	/* ap is freed */
 			}
 		}
 		if (ap->state == AG_DEAD) {

@@ -12,6 +12,7 @@
  */
 #include "common.h"
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <sys/file.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
@@ -19,7 +20,9 @@
 #include <sys/sysmacros.h>
 #endif
 #ifdef USE_PTMX
+#ifndef NO_STREAMS
 #include <stropts.h>
+#endif
 #include <signal.h>
 #endif
 #include <fcntl.h>
@@ -81,7 +84,9 @@ extern struct layer layer[];
 extern char *strcat();
 extern char *strncpy();
 extern char *strcpy();
+#ifndef USE_UNISTD
 extern long lseek();
+#endif
 
 static char * layer0ttyname;
 static char layer0hostname[MAXPATHLEN];
@@ -163,7 +168,11 @@ cntrlspeed(fd)
 int fd;
 {
 #ifndef NO_TERMIO
+#ifdef CBAUD
 	return saveterm.c_cflag & CBAUD;
+#else
+	return cfgetospeed(&saveterm);
+#endif
 #else
 	return (sgttyb.sg_ospeed);
 #endif
@@ -313,6 +322,13 @@ char **argv;
 	}
 
 	close(rdfd);
+	/*
+	 * Before boot there is no SIGCHLD handler to reap the child (see
+	 * above), so it would stay a zombie.  After boot the handler's
+	 * wait() reaps it; a waitpid() here could make that wait() block.
+	 */
+	if (!booted)
+		(void) waitpid(pid, (int *)0, 0);
 
 	if ((anslen > 0) && (answer[anslen-1] == '\n'))
 		--anslen;
@@ -566,7 +582,11 @@ char *tty;
 	 *  a process writing data to the slave side can hang and
 	 *  be unkillable on some systems.
 	 */
+#ifdef NO_STREAMS
+	(void) tcflush(fd, TCIFLUSH);
+#else
 	ioctl(fd, I_FLUSH, FLUSHR);
+#endif
 #endif
 	(void) close(fd);
 

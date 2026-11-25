@@ -16,6 +16,7 @@
 
 static char *version="@(#) XT+PTY hostagent.c May 16, 1994";
 
+#include <string.h>
 #include <sys/types.h>
 #include "hostagent.h"
 
@@ -34,6 +35,9 @@ static char *version="@(#) XT+PTY hostagent.c May 16, 1994";
 #include <stdio.h>
 #include <signal.h>
 #include <errno.h>
+#ifdef USE_UNISTD
+#include <unistd.h>	/* execl() is variadic: needs the prototype */
+#endif
 #ifndef NO_TERMIO
 #ifndef NO_TERMIOS
 #include <termios.h>
@@ -129,7 +133,6 @@ static char *version="@(#) XT+PTY hostagent.c May 16, 1994";
 #define index strchr
 #define rindex strrchr
 #endif
-extern char* sys_errlist[];
 extern char *strcpy();
 extern char *strncpy();
 extern char *strchr();
@@ -452,7 +455,7 @@ ptyopenagent()
 	tolen = strlen(to.sun_path) + 1 + sizeof(to.sun_family);
 	if (bind(agntsock, &to, tolen) < 0) {
 		agenterr("openagent: bind %s failed: %s", xtsockpath,
-			 	sys_errlist[errno]);
+			 	strerror(errno));
 		return ptyagcleanup();
 	}
 #ifndef USE_CHMOD0SOCKET
@@ -471,17 +474,17 @@ ptyopenagent()
 #else
 	if ((agntsock = open (agntsockpath, O_WRONLY, 0)) < 0) {
 		agenterr("openagent: open %s failed: %s", agntsockpath,
-					sys_errlist[errno]);
+					strerror(errno));
 		return ptyagcleanup();
 	}
 	if (mknod (xtsockpath, S_IFIFO | 0700, 0) < 0) {
 		agenterr("openagent: mknod %s failed: %s",
-			 xtsockpath, sys_errlist[errno]);
+			 xtsockpath, strerror(errno));
 		return ptyagcleanup();
 	}
 	if ((xtsock = open (xtsockpath, O_RDWR, 0)) < 0) {
 		agenterr("openagent: open %s failed: %s",
-			 xtsockpath, sys_errlist[errno]);
+			 xtsockpath, strerror(errno));
 		return ptyagcleanup();
 	}
 	selectfd = xtsock;
@@ -613,7 +616,7 @@ short chan;
 	errno = 0;
 	if (write (agntsock, &req, sizeof(req)) < sizeof(req)) {
 		agenterr("ioctlagent: write to %s failed: %s",
-			 agntsockpath, sys_errlist[errno]);
+			 agntsockpath, strerror(errno));
 		return ptyagcleanup();
 	}
 #endif /* USE_NAMED_PIPE */		
@@ -670,7 +673,7 @@ short chan;
 		errno = 0;
 		if (write (agntsock, &req, sizeof(req)) < sizeof(req)) {
 			agenterr("ioctlagent: write to %s failed: %s",
-				 agntsockpath, sys_errlist[errno]);
+				 agntsockpath, strerror(errno));
 			return ptyagcleanup();
 		}
 #endif /* USE_NAMED_PIPE */
@@ -689,7 +692,7 @@ short chan;
 	errno = 0;
 	if (write (agntsock, &req, sizeof(req)) < sizeof(req)) {
 		agenterr("ioctlagent: write to %s failed: %s",
-			 agntsockpath, sys_errlist[errno]);
+			 agntsockpath, strerror(errno));
 		return ptyagcleanup();
 	}
 #endif /* USE_NAMED_PIPE */
@@ -1353,7 +1356,7 @@ char *msg1, *msg2;
 
 	if (e != 0) {
 		strcat(buf, ": ");
-		strcat(buf, sys_errlist[e]);
+		strcat(buf, strerror(e));
 	}
 	strcat(buf, "\n");
 
@@ -1460,15 +1463,15 @@ char *command;
 		
 		if (myttyfd == -1) {
 			agenterr("Runlayer: cannot find an open tty");
-			return(NULL);
+			return(0);
 		}
 
 		/* find out old tty settings */
 		if (getagentnonraw(myttyfd) == -1)
 		{
 			agenterr("Runlayer: cannot get tty settings from fd %d: %s",
-					myttyfd, sys_errlist[errno]);
-			return(NULL);
+					myttyfd, strerror(errno));
+			return(0);
 		}
 	}
 
@@ -1573,7 +1576,7 @@ char *command;
 	/* this is the parent */
 	if (pid == -1)
 	{
-		agenterr("Runlayer: cannot fork: %s", sys_errlist[errno]);
+		agenterr("Runlayer: cannot fork: %s", strerror(errno));
 		return(-1);
 	}
 
@@ -1686,7 +1689,7 @@ char	*command;
 	if (rpid == -1)
 	{
 		agenterr("Runwaitlayer: waiting for %d failed: %s",
-				 childpid, sys_errlist[errno]);
+				 childpid, strerror(errno));
 		restoresigs();
 		return(-1);
 	}

@@ -41,10 +41,10 @@ struct logstruct {
 	char *badmsg;				/* message for bad packet */
 	time_t stamp;				/* timestamp */
 	char data[MAXLOGDATA];			/* trace data */
-} log[PKTHIST];
+} pktlog[PKTHIST];
 
-static struct logstruct *inlog	= log;
-static struct logstruct *outlog	= log;
+static struct logstruct *inlog	= pktlog;
+static struct logstruct *outlog	= pktlog;
 static short logflag;
 
 void
@@ -65,8 +65,8 @@ plogpkt(data, size, ident, badmsg)
 	inlog->size = size;
 	inlog->badmsg = badmsg;
 	inlog->stamp = stamp = time((time_t *) 0);
-	if ( ++inlog >= &log[PKTHIST] )
-		inlog = log;
+	if ( ++inlog >= &pktlog[PKTHIST] )
+		inlog = pktlog;
 	if ( logflag )
 	{
 		outlog = inlog;
@@ -272,8 +272,8 @@ fpdumphist(fp)
 		logflag = 0;
 		fptracepkt(fp, outlog->data, outlog->size, outlog->ident,
 					outlog->badmsg, outlog->stamp);
-		if ( ++outlog >= &log[PKTHIST] )
-			outlog = log;
+		if ( ++outlog >= &pktlog[PKTHIST] )
+			outlog = pktlog;
 	}
 	fflush(fp);
 #endif	PTRACE

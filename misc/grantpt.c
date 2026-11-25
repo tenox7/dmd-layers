@@ -21,7 +21,9 @@
 #include <sys/stat.h>
 #include <sys/fcntl.h>
 #include <string.h>
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
 #include <sys/sysmacros.h>
+#endif
 
 #ifdef USE_CLONE_PTY
 

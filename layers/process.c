@@ -21,7 +21,7 @@
 #include <signal.h>
 #include <fcntl.h>
 #include <errno.h>
-#ifdef USE_PTMX
+#if defined(USE_PTMX) && !defined(NO_STREAMS)
 #include <sys/stropts.h>
 #endif
 #ifdef USE_TERMIOS_H
@@ -280,7 +280,7 @@ int lay;
 pushmodules(fd)
 int fd;
 {
-#ifdef USE_PTMX
+#if defined(USE_PTMX) && !defined(NO_STREAMS)
 	(void) ioctl(fd, I_PUSH, "ptem");
 	(void) ioctl(fd, I_PUSH, "ldterm");
 	(void) ioctl(fd, I_PUSH, "smterm");

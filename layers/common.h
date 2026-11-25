@@ -17,6 +17,12 @@
 #include <sys/param.h>
 #endif
 
+#ifdef USE_STDARG
+/* Debug() is variadic: callers need the prototype (arm64 passes
+ * variadic arguments on the stack) */
+void Debug(int level, char *format, ...);
+#endif
+
 /* Debug levels */
 #define DEBERROR	0x01		/* non-protocol error */
 #define DEBINFO		0x02		/* low-volume info messages */

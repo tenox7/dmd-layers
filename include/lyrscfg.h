@@ -184,6 +184,20 @@
 #undef USE_TTYDEV
 #undef USE_FILIO
 #undef USE_PTEM
+#define NO_STREAMS		/* no STREAMS; glibc 2.30+ has no stropts.h */
+#endif
+
+#if (__APPLE__ || __FreeBSD__)
+/* macOS, FreeBSD: SVR4-like ptys (/dev/ptmx, grantpt), no STREAMS modules */
+#define USE_DIRENT
+#define USE_UNISTD
+#define NO_UT_EXIT		/* struct utmpx has no ut_exit */
+#define USE_STDARG		/* use stdarg.h instead of varargs.h */
+#undef USE_PTEM
+#define NO_STREAMS		/* no stropts.h, no I_PUSH of ptem/ldterm */
+#endif
+#if (__FreeBSD__)
+#undef USE_TTYDEV		/* no sys/ttydev.h */
 #endif
 
 #ifdef uts

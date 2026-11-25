@@ -12,6 +12,7 @@
 #include	"proto.h"
 #include	"packets.h"
 #include	"pstats.h"
+#include	<sys/ioctl.h>
 #include	<signal.h>
 #ifdef USE_FILIO
 #include	<sys/filio.h>

@@ -13,6 +13,7 @@
 **		else value of (*Pxfuncp)().
 */
 
+#include <string.h>
 #include	"common.h"
 #include	"pconfig.h"
 #include	"proto.h"
@@ -22,7 +23,6 @@
 
 extern int	numpcbufs;
 extern int	crc();
-extern char	*sys_errlist[];
 extern int	errno;
 extern int	networkxt;
 extern struct layer layer[];
@@ -144,7 +144,7 @@ int nbytes;
 				int sve = errno;
 				Debug(DEBERROR,
 					"check_write: error writing: %s\n",
-							sys_errlist[errno]);
+							strerror(errno));
 				errno = sve;
 				break;
 			}

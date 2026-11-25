@@ -33,6 +33,8 @@ DEFDMDSYS=$(DEFDMD)
 #EXTRACFLAGS=-O -I/usr/include -I/usr/include/bsd -lc -lbsd
 # Use this for Linux:
 EXTRACFLAGS=-O -w -Dconst=
+# Use this for macOS (Apple clang):
+#EXTRACFLAGS=-O -w -std=gnu89 -D_FORTIFY_SOURCE=0 -Wno-return-mismatch
 # Use this for HP-UX:
 #EXTRACFLAGS=-O -lV3
 # Use this for UnixWare 2.01 or later:
