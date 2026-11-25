@@ -198,6 +198,7 @@
 #endif
 #if (__FreeBSD__)
 #undef USE_TTYDEV		/* no sys/ttydev.h */
+#define USE_POSIX_OPENPT	/* posix_openpt(), not open("/dev/ptmx") */
 #endif
 
 #ifdef uts

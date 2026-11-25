@@ -451,9 +451,15 @@ register char *tty;
 
 #ifdef USE_PTMX
 	Debug(DEBINFO, "opening ptmx\n");
+#ifdef USE_POSIX_OPENPT
+	fd = posix_openpt(O_RDWR | O_NOCTTY);
+#else
 	fd = open("/dev/ptmx", O_RDWR);
-	if (fd < 0)
+#endif
+	if (fd < 0) {
+		Debug(DEBERROR, "allocpty: no pty master, errno %d\n", errno);
 		return(-1);
+	}
 	unlockpt(fd);
 	strcpy(tty, ptsname(fd));
 
