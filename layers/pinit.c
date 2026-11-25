@@ -5,7 +5,9 @@
 
 #include	"common.h"
 #include 	<sys/types.h>
-#include	<sgtty.h>
+#ifdef NO_TERMIO
+#include	<sgtty.h>	/* only old BSD; FreeBSD has none */
+#endif
 #include	<signal.h>
 #include	<stdio.h>
 #include	"pconfig.h"
