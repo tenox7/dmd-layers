@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <time.h>
+#include <signal.h>
 #ifdef USE_STDARG
 #include <stdarg.h>
 #else
@@ -15,6 +16,26 @@
 extern int DebugLevel;
 extern int DebugTimeout;
 extern FILE *DebugFile;
+
+/*
+ * The signal handlers (catchsig, ptimeout) call Debug too. localtime()
+ * and stdio are not async-signal-safe: a handler that runs while the
+ * main loop is in localtime() here hangs on its lock (glibc), and
+ * layers stops. Hold these signals while Debug writes. 2026.
+ */
+static void
+debughold(old)
+sigset_t *old;
+{
+	sigset_t hold;
+
+	sigemptyset(&hold);
+	sigaddset(&hold, SIGCHLD);
+	sigaddset(&hold, SIGALRM);
+	sigaddset(&hold, SIGHUP);
+	sigaddset(&hold, SIGTERM);
+	sigprocmask(SIG_BLOCK, &hold, old);
+}
 
 void
 #ifdef USE_STDARG
@@ -30,9 +51,11 @@ va_dcl
 	time_t seconds;
 	struct tm *loctime;
 	static int dotimestamp = 1;
+	sigset_t oldmask;
 
 	if ((DebugLevel & level) == 0)
 		return;
+	debughold(&oldmask);
 
 	if (DebugTimeout) {
 		/* timeout debug messages can interrupt other debug messages */
@@ -64,6 +87,7 @@ va_dcl
 	}
 	else
 		dotimestamp = 0;
+	sigprocmask(SIG_SETMASK, &oldmask, (sigset_t *)0);
 }
 
 void
@@ -73,9 +97,11 @@ unsigned char *buf;
 int nbytes;
 {
 	int i;
+	sigset_t oldmask;
 
 	if ((DebugLevel & DEBRTRACE) == 0)
 		return;
+	debughold(&oldmask);
 
 	if (xmit)
 		Debug(DEBRTRACE, "sending %d bytes to terminal:", nbytes);
@@ -91,6 +117,7 @@ int nbytes;
 	}
 
 	Debug(DEBRTRACE, "", 0);  /* reset dotimestamp */
+	sigprocmask(SIG_SETMASK, &oldmask, (sigset_t *)0);
 }
 
 DebugInit(debugfname)
